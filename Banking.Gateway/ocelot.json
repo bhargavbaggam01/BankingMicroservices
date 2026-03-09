@@ -5,7 +5,7 @@
       "DownstreamScheme": "http",
       "UpstreamPathTemplate": "/customers/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "ServiceName": "customer-service",
+      "ServiceName": "CUSTOMER-SERVICE",
       "UseServiceDiscovery": true
     },
     {
@@ -13,7 +13,7 @@
       "DownstreamScheme": "http",
       "UpstreamPathTemplate": "/customers",
       "UpstreamHttpMethod": [ "GET", "POST" ],
-      "ServiceName": "customer-service",
+      "ServiceName": "CUSTOMER-SERVICE",
       "UseServiceDiscovery": true
     },
     {
@@ -21,7 +21,7 @@
       "DownstreamScheme": "http",
       "UpstreamPathTemplate": "/accounts/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "ServiceName": "account-service",
+      "ServiceName": "ACCOUNT-SERVICE",
       "UseServiceDiscovery": true
     },
     {
@@ -29,14 +29,14 @@
       "DownstreamScheme": "http",
       "UpstreamPathTemplate": "/accounts",
       "UpstreamHttpMethod": [ "GET", "POST" ],
-      "ServiceName": "account-service",
+      "ServiceName": "ACCOUNT-SERVICE",
       "UseServiceDiscovery": true
     }
   ],
   "GlobalConfiguration": {
     "BaseUrl": "http://localhost:5000",
     "ServiceDiscoveryProvider": {
-      "Host": "eureka",
+      "Host": "localhost",
       "Port": 8761,
       "Type": "Eureka"
     }

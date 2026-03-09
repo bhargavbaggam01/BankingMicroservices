@@ -2,41 +2,51 @@ using Banking.Common.Middleware;
 using Banking.CustomerService.Clients;
 using Banking.CustomerService.Repositories;
 using Refit;
+using Steeltoe.Common.Http.Discovery;
 using Steeltoe.Discovery.Client;
 using Steeltoe.Discovery.Eureka;
 using Steeltoe.Extensions.Configuration.ConfigServer;
+using Steeltoe.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add Steeltoe Config Server
 builder.Configuration.AddConfigServer();
 
-// Add services to the container
+// Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
-// Add Steeltoe Service Discovery
+// Enable Eureka discovery
 builder.Services.AddServiceDiscovery(o => o.UseEureka());
 
-// Register Repository
+// Register repository
 builder.Services.AddSingleton<ICustomerRepository, CustomerRepository>();
 
-// Registered Refit Client for AccountService
+// Refit client using Eureka discovery
 builder.Services.AddRefitClient<IAccountClient>()
-    .ConfigureHttpClient(c => c.BaseAddress = new Uri("http://account-service:80"));
+    .ConfigureHttpClient(c =>
+        c.BaseAddress = new Uri("http://ACCOUNT-SERVICE"))
+    .AddServiceDiscovery();
 
+// Configure URLs (Docker or local)
+var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
+if (string.IsNullOrEmpty(urls))
+{
+    urls = "http://0.0.0.0:5001";
+}
 
-builder.WebHost.UseUrls("http://0.0.0.0:80");
+builder.WebHost.UseUrls(urls);
+
 var app = builder.Build();
-
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
-// Add Global Exception Handler Middleware
+// Global exception middleware
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
 app.UseAuthorization();

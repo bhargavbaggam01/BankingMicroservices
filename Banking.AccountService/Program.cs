@@ -2,6 +2,7 @@ using Banking.AccountService.Clients;
 using Banking.AccountService.Repositories;
 using Banking.Common.Middleware;
 using Refit;
+using Steeltoe.Common.Http.Discovery;
 using Steeltoe.Discovery.Client;
 using Steeltoe.Discovery.Eureka;
 using Steeltoe.Extensions.Configuration.ConfigServer;
@@ -22,12 +23,18 @@ builder.Services.AddServiceDiscovery(o => o.UseEureka());
 // Register Repository
 builder.Services.AddSingleton<IAccountRepository, AccountRepository>();
 
-// Register Refit Client for CustomerService
-// Use explicit port for now - Eureka discovery will be handled internally
 builder.Services.AddRefitClient<ICustomerClient>()
-    .ConfigureHttpClient(c => c.BaseAddress = new Uri("http://customer-service:80"));
+    .ConfigureHttpClient(c =>
+        c.BaseAddress = new Uri("http://CUSTOMER-SERVICE"))
+    .AddServiceDiscovery();
 
-builder.WebHost.UseUrls("http://0.0.0.0:80");
+// Use environment variable if set (used by Docker), otherwise default to localhost:5002 for local runs
+var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
+if (string.IsNullOrEmpty(urls))
+{
+    urls = "http://0.0.0.0:5002";
+}
+builder.WebHost.UseUrls(urls);
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
