@@ -2,58 +2,49 @@
 
 ## Overview
 
-This project is a **Microservices-based Banking Application** built using **.NET 9**. It demonstrates a simplified banking system implemented using modern microservices architecture patterns including:
+This project demonstrates a **.NET microservices architecture** using:
 
-* API Gateway
-* Service Discovery
-* Inter-service communication
-* Centralized exception handling
-* Containerization using Docker
+* **ASP.NET Core Web APIs**
+* **Ocelot API Gateway**
+* **Steeltoe Service Discovery**
+* **Netflix Eureka Server**
+* **Refit for service-to-service communication**
+* **Global Exception Handling Middleware**
 
-The application consists of two core microservices:
+The system contains three main services:
 
-* **Customer Service** – manages customer data
-* **Account Service** – manages account transactions
+| Service                     | Purpose                             |
+| --------------------------- | ----------------------------------- |
+| **Banking.Gateway**         | Entry point for all client requests |
+| **Banking.CustomerService** | Manages customer data               |
+| **Banking.AccountService**  | Manages bank accounts               |
 
-These services communicate through REST APIs and are discovered dynamically using **Eureka Service Registry**.
+Services communicate using **service discovery via Eureka**, avoiding hardcoded URLs.
 
 ---
 
 # Architecture
 
 ```
-Client (Postman / Browser)
+Client / Postman
         │
         ▼
-API Gateway (Ocelot)
+Banking.Gateway (Ocelot API Gateway)
         │
         ▼
-Eureka Service Registry
-   │              │
-   ▼              ▼
-CustomerService  AccountService
+Service Discovery (Eureka Server)
+        │
+ ┌───────────────┴───────────────┐
+ ▼                               ▼
+CustomerService             AccountService
 ```
 
-### Components
+### Communication Flow
 
-| Component        | Description                                    |
-| ---------------- | ---------------------------------------------- |
-| API Gateway      | Routes external requests to internal services  |
-| Eureka Server    | Service discovery registry                     |
-| Customer Service | Manages customers                              |
-| Account Service  | Manages accounts                               |
-| Banking.Common   | Shared DTOs, models, exceptions and middleware |
-
----
-
-# Technologies Used
-
-* .NET 9
-* ASP.NET Core Web API
-* Ocelot API Gateway
-* Steeltoe Eureka Discovery Client
-* Refit (HTTP client for inter-service communication)
-* Docker & Docker Compose
+1. Client calls the **Gateway**.
+2. Gateway forwards the request using **Ocelot routing**.
+3. Services communicate using **Refit clients**.
+4. Service addresses are resolved through **Eureka Service Discovery**.
 
 ---
 
@@ -62,126 +53,128 @@ CustomerService  AccountService
 ```
 BankingApplication
 │
-├── Banking.Common
-│   ├── Models
-│   ├── DTOs
-│   ├── Exceptions
-│   └── Middleware
+├── Banking.Gateway
+│       ├── Program.cs
+│       └── ocelot.json
 │
 ├── Banking.CustomerService
-│   ├── Controllers
-│   ├── Repositories
-│   ├── Clients
-│   └── Program.cs
+│       ├── Controllers
+│       ├── Repositories
+│       ├── Clients
+│       └── Program.cs
 │
 ├── Banking.AccountService
-│   ├── Controllers
-│   ├── Repositories
-│   ├── Clients
-│   └── Program.cs
+│       ├── Controllers
+│       ├── Repositories
+│       ├── Clients
+│       └── Program.cs
 │
-├── Banking.Gateway
-│   ├── ocelot.json
-│   └── Program.cs
-│
-└── docker-compose.yml
+└── Banking.Common
+        └── Middleware
+                └── GlobalExceptionHandlerMiddleware.cs
 ```
 
 ---
 
-# Features Implemented
+# Technologies Used
 
-## Customer Service APIs
-
-| Method | Endpoint              | Description                          |
-| ------ | --------------------- | ------------------------------------ |
-| POST   | `/api/customers`      | Add new customer                     |
-| GET    | `/api/customers`      | Get all customers                    |
-| GET    | `/api/customers/{id}` | Get customer details                 |
-| PUT    | `/api/customers/{id}` | Update customer                      |
-| DELETE | `/api/customers/{id}` | Delete customer and related accounts |
+* **.NET 8 / .NET 9**
+* **ASP.NET Core Web API**
+* **Steeltoe**
+* **Netflix Eureka**
+* **Ocelot API Gateway**
+* **Refit HTTP Client**
+* **Docker (for Eureka)**
 
 ---
 
-## Account Service APIs
+# Prerequisites
 
-| Method | Endpoint                            | Description         |
-| ------ | ----------------------------------- | ------------------- |
-| POST   | `/api/accounts`                     | Create account      |
-| POST   | `/api/accounts/{id}/add-money`      | Deposit money       |
-| POST   | `/api/accounts/{id}/withdraw-money` | Withdraw money      |
-| GET    | `/api/accounts/{id}`                | Get account details |
-| DELETE | `/api/accounts/{id}`                | Delete account      |
+Ensure the following tools are installed:
 
-Account service validates customer existence by calling **Customer Service**.
-
----
-
-# Cross Cutting Concerns
-
-The following cross-cutting concerns are implemented:
-
-* Global Exception Handling Middleware
-* Service Discovery using Eureka
-* API Gateway Routing
-* Inter-service communication using Refit
-* Containerized deployment using Docker
+* .NET SDK 8+
+* Docker
+* Visual Studio / VS Code
+* Postman (for API testing)
 
 ---
 
 # Running the Application
 
-## Prerequisites
+## Step 1 — Start Eureka Server
 
-Install the following:
+Run Eureka using Docker:
 
-* .NET 9 SDK
-* Docker
-* Docker Compose
-* Postman (for testing)
+```bash
+docker run -d -p 8761:8761 --name eureka-server steeltoeoss/eureka-server
+```
+
+Verify Eureka is running:
+
+```
+http://localhost:8761
+```
+
+You should see the **Eureka Dashboard**.
 
 ---
 
-# Option 1 – Run using Docker (Recommended)
+## Step 2 — Run Customer Service
 
-### Step 1 – Navigate to the project root
+Open a terminal and run:
 
-```
-cd BankingApplication
-```
-
-### Step 2 – Build Docker images
-
-```
-docker compose build
+```bash
+dotnet run --project Banking.CustomerService
 ```
 
-### Step 3 – Start containers
+The service will:
+
+* Register itself with Eureka
+* Start the API server
+
+Example running port:
 
 ```
-docker compose up
-```
-
-### Step 4 – Verify running containers
-
-```
-docker ps
-```
-
-Expected containers:
-
-```
-gateway
-customer-service
-account-service
-eureka
+http://localhost:5208
 ```
 
 ---
 
-# Accessing Services
+## Step 3 — Run Account Service
 
-### Eureka Dashboard
+Open another terminal:
+
+```bash
+dotnet run --project Banking.AccountService
+```
+
+Example running port:
+
+```
+http://localhost:5102
+```
+
+---
+
+## Step 4 — Run API Gateway
+
+Open another terminal:
+
+```bash
+dotnet run --project Banking.Gateway
+```
+
+Example port:
+
+```
+http://localhost:5029
+```
+
+---
+
+# Verify Service Registration
+
+Open Eureka UI:
 
 ```
 http://localhost:8761
@@ -190,161 +183,159 @@ http://localhost:8761
 You should see:
 
 ```
-CUSTOMER-SERVICE
 ACCOUNT-SERVICE
+CUSTOMER-SERVICE
+BANKING.GATEWAY
+```
+
+All services should show **Status = UP**.
+
+---
+
+# API Endpoints
+
+All requests should be sent to the **Gateway**.
+
+### Base Gateway URL
+
+```
+http://localhost:{gateway-port}
+```
+
+Example:
+
+```
+http://localhost:5029
 ```
 
 ---
 
-### API Gateway
+## Customer APIs
+
+### Get Customers
 
 ```
-http://localhost:5000
+GET /customers
 ```
 
-All external requests should go through the gateway.
+Example:
+
+```
+http://localhost:5029/customers
+```
 
 ---
 
-# Testing APIs using Postman
-
-## Create Customer
+### Create Customer
 
 ```
-POST http://localhost:5000/customers
+POST /customers
 ```
 
-Body
+Body:
 
-```
+```json
 {
-  "name": "Bhargav",
-  "email": "Bhargav@yahoo.com",
-  "phone": "1234567890"
+  "name": "John Doe",
+  "email": "john@example.com"
 }
 ```
 
 ---
 
-## Get Customers
+## Account APIs
+
+### Get Accounts
 
 ```
-GET http://localhost:5000/customers
+GET /accounts
+```
+
+Example:
+
+```
+http://localhost:5029/accounts
 ```
 
 ---
 
-## Create Account
+### Create Account
 
 ```
-POST http://localhost:5000/accounts
+POST /accounts
 ```
 
-Body
+Body:
 
-```
+```json
 {
   "customerId": 1,
-  "balance": 10000
+  "balance": 1000
 }
 ```
 
 ---
 
-## Deposit Money
+# Service-to-Service Communication
+
+Services call each other using **Refit clients**.
+
+Example:
 
 ```
-POST http://localhost:5000/accounts/1/add-money
+AccountService → CustomerService
+CustomerService → AccountService
 ```
 
-Body
+Instead of using fixed URLs, they call using **service names**:
 
 ```
+http://CUSTOMER-SERVICE
+http://ACCOUNT-SERVICE
+```
+
+Eureka resolves the actual service location.
+
+---
+
+# Error Handling
+
+The project uses a shared middleware:
+
+```
+GlobalExceptionHandlerMiddleware
+```
+
+Features:
+
+* Centralized exception handling
+* Standard JSON error responses
+* Prevents internal stack traces from leaking to clients
+
+Example error response:
+
+```json
 {
-  "amount": 2000,
-  "customerId": 1
+  "message": "An internal server error occurred",
+  "type": "HttpRequestException"
 }
 ```
 
 ---
 
-## Withdraw Money
+# Useful Commands
 
-```
-POST http://localhost:5000/accounts/1/withdraw-money
-```
+Stop Eureka:
 
-Body
-
-```
-{
-  "amount": 100,
-  "customerId": 1
-}
+```bash
+docker stop eureka-server
 ```
 
----
+Remove Eureka container:
 
-## Delete Customer (Cascade Delete)
-
-```
-DELETE http://localhost:5000/customers/1
-```
-
-Deleting a customer automatically removes all related accounts.
-
----
-
-# Running Without Docker (Local Development)
-
-Start services individually.
-
-### Start Customer Service
-
-```
-dotnet run --project Banking.CustomerService
-```
-
-Runs on:
-
-```
-http://localhost:5001
+```bash
+docker rm eureka-server
 ```
 
 ---
 
-### Start Account Service
-
-```
-dotnet run --project Banking.AccountService
-```
-
-Runs on:
-
-```
-http://localhost:5002
-```
-
----
-
-### Start API Gateway
-
-```
-dotnet run --project Banking.Gateway
-```
-
-Runs on:
-
-```
-http://localhost:5000
-```
-
----
-
-# Assumptions
-
-* In-memory repositories are used instead of databases.
-* Data will reset when services restart.
-* Authentication and authorization are not implemented as part of Assignment.
-
----
