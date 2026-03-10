@@ -10,8 +10,11 @@ using Steeltoe.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add Steeltoe Config Server
-builder.Configuration.AddConfigServer();
+// Optional: add Steeltoe Config Server only when explicitly enabled
+if (Environment.GetEnvironmentVariable("USE_CONFIG_SERVER") == "true")
+{
+    builder.Configuration.AddConfigServer();
+}
 
 // Add services
 builder.Services.AddControllers();
